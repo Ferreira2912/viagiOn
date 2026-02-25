@@ -1,0 +1,218 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ─── SaaS Models ──────────────────────────────────────────
+
+model Empresa {
+  id            String   @id @default(uuid())
+  nome_fantasia String
+  razao_social  String?
+  cnpj          String?  @unique
+  logo_url      String?
+  cor_primaria  String   @default("#831843")
+  criado_em     DateTime @default(now())
+
+  usuarios    Usuario[]
+  veiculos    Veiculo[]
+  motoristas  Motorista[]
+  viagens     Viagem[]
+  manutencoes Manutencao[]
+  multas      Multa[]
+}
+
+model Usuario {
+  id        String   @id @default(uuid())
+  empresaId String
+  empresa   Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  nome      String
+  email     String   @unique
+  senha     String
+  role      String   @default("ADMIN")
+  criado_em DateTime @default(now())
+}
+
+// ─── Fleet Models ──────────────────────────────────────────
+
+model Veiculo {
+  id                String   @id @default(uuid())
+  empresaId         String
+  empresa           Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  prefixo           String
+  placa             String   @unique
+  chassi            String?
+  renavam           String?
+  marca_carroceria  String?
+  modelo_carroceria String?
+  marca_chassi      String?
+  ano_fabricacao    Int?
+  ano_modelo        Int?
+  lugares           Int?
+  tipo_veiculo      String?
+  cor_veiculo       String?
+  status            String   @default("ATIVO")
+  consumo_km_l      Decimal? @db.Decimal(10, 2)
+  custo_km          Decimal? @db.Decimal(10, 2)
+  croqui_config     Json?
+  criado_em         DateTime @default(now())
+
+  manutencoes Manutencao[]
+  multas      Multa[]
+  viagens     Viagem[]
+  arquivos    ArquivoVeiculo[]
+}
+
+model Motorista {
+  id                 String    @id @default(uuid())
+  empresaId          String
+  empresa            Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  nome_completo      String
+  cpf                String    @unique
+  rg                 String?
+  cnh                String?
+  categoria_cnh      String?
+  validade_cnh       DateTime?
+  data_nascimento    DateTime?
+  telefone           String?
+  email              String?
+  endereco           String?
+  salario            Decimal?  @db.Decimal(10, 2)
+  data_admissao      DateTime?
+  status_operacional String    @default("ATIVO")
+  funcao             String?
+  status_colaborador String    @default("CONTRATADO")
+  criado_em          DateTime  @default(now())
+
+  multas            Multa[]
+  viagens_como_mot1 Viagem[]  @relation("Motorista1")
+  viagens_como_mot2 Viagem[]  @relation("Motorista2")
+}
+
+model Manutencao {
+  id              String   @id @default(uuid())
+  empresaId       String
+  empresa         Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  veiculoId       String
+  veiculo         Veiculo  @relation(fields: [veiculoId], references: [id], onDelete: Cascade)
+
+  fornecedor      String
+  tipo_manutencao String
+  quilometragem   Int?
+  data_manutencao DateTime
+  agendar_proxima Boolean  @default(false)
+  descricao       String?
+  pago            Boolean  @default(false)
+  criado_em       DateTime @default(now())
+}
+
+model Multa {
+  id              String    @id @default(uuid())
+  empresaId       String
+  empresa         Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  veiculoId       String
+  veiculo         Veiculo   @relation(fields: [veiculoId], references: [id], onDelete: Cascade)
+  motoristaId     String
+  motorista       Motorista @relation(fields: [motoristaId], references: [id], onDelete: Cascade)
+
+  data_infracao   DateTime
+  descricao       String
+  valor           Decimal   @db.Decimal(10, 2)
+  pontos_cnh      Int       @default(0)
+  pago_descontado Boolean   @default(false)
+  criado_em       DateTime  @default(now())
+}
+
+// ─── Trip Models ────────────────────────────────────────────
+
+model Viagem {
+  id                  String    @id @default(uuid())
+  empresaId           String
+  empresa             Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  codigo_interno      String?
+  nome_viagem         String
+  tipo_viagem         String?
+  observacoes         String?
+  pacote_inclui       String?
+
+  data_partida        DateTime
+  data_inicio_retorno DateTime?
+  data_retorno        DateTime
+  qtd_dias            Int?
+  qtd_noites          Int?
+
+  veiculoId           String?
+  veiculo             Veiculo?   @relation(fields: [veiculoId], references: [id])
+  motorista1Id        String?
+  motorista1          Motorista? @relation("Motorista1", fields: [motorista1Id], references: [id])
+  motorista2Id        String?
+  motorista2          Motorista? @relation("Motorista2", fields: [motorista2Id], references: [id])
+
+  distancia_km        Int?
+  valor_pacote        Decimal?   @db.Decimal(10, 2)
+  qtd_passageiros     Int?
+  status              String     @default("ATIVA")
+  criado_em           DateTime   @default(now())
+
+  roteiros     ViagemRoteiro[]
+  fornecedores ViagemFornecedor[]
+  passageiros  ViagemPassageiro[]
+}
+
+model ViagemRoteiro {
+  id        String   @id @default(uuid())
+  viagemId  String
+  viagem    Viagem   @relation(fields: [viagemId], references: [id], onDelete: Cascade)
+  data      DateTime
+  descricao String
+}
+
+model ViagemFornecedor {
+  id         String    @id @default(uuid())
+  viagemId   String
+  viagem     Viagem    @relation(fields: [viagemId], references: [id], onDelete: Cascade)
+  fornecedor String
+  tipo_custo String
+  valor      Decimal   @db.Decimal(10, 2)
+  data_pgto  DateTime?
+}
+
+model ViagemPassageiro {
+  id       String  @id @default(uuid())
+  viagemId String
+  viagem   Viagem  @relation(fields: [viagemId], references: [id], onDelete: Cascade)
+  nome     String
+  rg       String?
+  cpf      String?
+  poltrona String?
+}
+
+model ArquivoVeiculo {
+  id        String   @id @default(uuid())
+  veiculoId String
+  veiculo   Veiculo  @relation(fields: [veiculoId], references: [id], onDelete: Cascade)
+  nome      String
+  url       String
+  tipo      String
+  criado_em DateTime @default(now())
+}
+
+// ─── Legacy (kept for backward compat, can be removed after cleanup) ──
+model EventoFrota {
+  id              String   @id @default(uuid())
+  veiculoId       String
+  motoristaId     String?
+  titulo_evento   String?
+  tipo_evento     String?
+  data_hora_inicio DateTime
+  data_hora_fim    DateTime
+  criado_em       DateTime @default(now())
+}
