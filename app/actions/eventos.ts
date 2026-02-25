@@ -16,7 +16,6 @@ export async function criarEventoFrota(formData: FormData) {
     const conflito = await prisma.eventoFrota.findFirst({
         where: {
             veiculoId: veiculoId,
-            status: { not: "CANCELADO" },
             AND: [
                 { data_hora_inicio: { lt: fim } },
                 { data_hora_fim: { gt: inicio } }
@@ -30,9 +29,8 @@ export async function criarEventoFrota(formData: FormData) {
         data: {
             veiculoId,
             motoristaId,
-            titulo: titulo,
+            titulo_evento: titulo,
             tipo_evento: tipo as any,
-            status: "AGENDADO",
             data_hora_inicio: inicio,
             data_hora_fim: fim,
         }
@@ -65,7 +63,6 @@ export async function editarEventoFrota(formData: FormData) {
         where: {
             veiculoId: veiculoId,
             id: { not: id },
-            status: { not: "CANCELADO" },
             AND: [
                 { data_hora_inicio: { lt: fim } },
                 { data_hora_fim: { gt: inicio } }
@@ -80,7 +77,7 @@ export async function editarEventoFrota(formData: FormData) {
         data: {
             veiculoId,
             motoristaId,
-            titulo: titulo,
+            titulo_evento: titulo,
             data_hora_inicio: inicio,
             data_hora_fim: fim,
         }
