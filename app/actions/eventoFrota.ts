@@ -37,7 +37,6 @@ export async function createEventoFrota(data: CreateEventoFrotaInput) {
     const choqueVeiculo = await prisma.eventoFrota.findFirst({
       where: {
         veiculoId: veiculoId,
-        status: { not: "CANCELADO" },
         AND: [
           { data_hora_inicio: { lt: fim } },
           { data_hora_fim: { gt: inicio } }
@@ -56,7 +55,6 @@ export async function createEventoFrota(data: CreateEventoFrotaInput) {
     const choqueMotorista = await prisma.eventoFrota.findFirst({
       where: {
         motoristaId: motoristaId,
-        status: { not: "CANCELADO" },
         AND: [
           { data_hora_inicio: { lt: fim } },
           { data_hora_fim: { gt: inicio } }
@@ -74,13 +72,12 @@ export async function createEventoFrota(data: CreateEventoFrotaInput) {
     // Caso não haja choque, cria o evento
     const novoEvento = await prisma.eventoFrota.create({
       data: {
-        titulo,
+        titulo_evento: titulo,
         tipo_evento,
         data_hora_inicio: inicio,
         data_hora_fim: fim,
         veiculoId,
         motoristaId,
-        status: "AGENDADO",
       }
     });
 
